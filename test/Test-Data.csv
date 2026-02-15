@@ -1,0 +1,11 @@
+id,age,sex,dataset,cp,trestbps,chol,fbs,restecg,thalch,exang,oldpeak,slope,ca,thal,num
+1,63,Male,Cleveland,typical angina,145,233,True,lv hypertrophy,150,False,2.3,downsloping,0,fixed defect,0
+2,67,Male,Cleveland,asymptomatic,160,286,False,lv hypertrophy,108,True,1.5,flat,3,normal,2
+3,67,Male,Cleveland,asymptomatic,120,229,False,lv hypertrophy,129,True,2.6,flat,2,reversable defect,1
+4,37,Male,Cleveland,non-anginal,130,250,False,normal,187,False,3.5,downsloping,0,normal,0
+5,41,Female,Cleveland,atypical angina,130,204,False,lv hypertrophy,172,False,1.4,upsloping,0,normal,0
+6,56,Male,Cleveland,atypical angina,120,236,False,normal,178,False,0.8,upsloping,0,normal,0
+7,62,Female,Cleveland,asymptomatic,140,268,False,lv hypertrophy,160,False,3.6,downsloping,2,normal,3
+8,57,Female,Cleveland,asymptomatic,120,354,False,normal,163,True,0.6,upsloping,0,normal,0
+9,63,Male,Cleveland,asymptomatic,130,254,False,lv hypertrophy,147,False,1.4,flat,1,reversable defect,2
+10,53,Male,Cleveland,asymptomatic,140,203,True,lv hypertrophy,155,True,3.1,downsloping,0,reversable defect,1
