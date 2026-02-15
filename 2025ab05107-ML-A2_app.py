@@ -3,16 +3,21 @@ import pandas as pd
 import numpy as np
 import joblib
 from pathlib import Path
-from sklearn.metrics import classification_report, confusion_matrix
+from sklearn.metrics import (
+    accuracy_score,
+    roc_auc_score,
+    precision_score,
+    recall_score,
+    f1_score,
+    matthews_corrcoef
+)
 
 st.set_page_config(page_title="ML Assignment 2", layout="wide")
-st.title("ML Assignment 2 – Credit Card Default Prediction")
 
-# -----------------------------------
-# Absolute project paths (CRITICAL)
-# -----------------------------------
-BASE_DIR = Path(__file__).resolve().parent
-MODEL_DIR = BASE_DIR / "model"
+st.title("ML Assignment 2 – Classification Models & Evaluation")
+
+BASE = Path(__file__).resolve().parent
+MODEL_DIR = BASE / "model"
 
 TARGET = "default.payment.next.month"
 
@@ -21,102 +26,80 @@ MODELS = {
     "Decision Tree": MODEL_DIR / "Decision Tree.pkl",
     "KNN": MODEL_DIR / "KNN.pkl",
     "Naive Bayes": MODEL_DIR / "Naive Bayes.pkl",
+    "Random Forest": MODEL_DIR / "Random Forest.pkl",
     "XGBoost": MODEL_DIR / "XGBoost.pkl"
 }
 
-SCALER_PATH = MODEL_DIR / "scaler.pkl"
+SCALER = MODEL_DIR / "scaler.pkl"
 
-# -----------------------------------
-model_choice = st.selectbox("Select Model", MODELS.keys())
-
-uploaded = st.file_uploader("Upload CSV file", type="csv")
+uploaded = st.file_uploader("Upload CSV Dataset (must contain target column)", type="csv")
 
 if uploaded:
 
     df = pd.read_csv(uploaded)
 
-    st.subheader("Uploaded Data")
+    st.subheader("Dataset Preview")
     st.dataframe(df.head())
 
-    # Target detection
-    if TARGET in df.columns:
-        y = df[TARGET]
-        X = df.drop(columns=[TARGET])
-        st.success("Target column detected – evaluation enabled.")
-    else:
-        y = None
-        X = df
-        st.info("Prediction mode (no target column).")
+    if TARGET not in df.columns:
+        st.error("Dataset must contain target column: default.payment.next.month")
+        st.stop()
+
+    y = df[TARGET]
+    X = df.drop(columns=[TARGET])
 
     # Cleaning
     X = X.replace("?", np.nan)
-
-    for c in X.columns:
-        X[c] = pd.to_numeric(X[c], errors="coerce")
-
+    X = X.apply(pd.to_numeric, errors="coerce")
     X = X.fillna(0)
 
-    # -----------------------------------
-    # Load scaler safely
-    # -----------------------------------
-    scaler = joblib.load(SCALER_PATH)
-    expected_features = scaler.n_features_in_
+    scaler = joblib.load(SCALER)
+    expected = scaler.n_features_in_
 
     X = X.to_numpy()
 
-    # Feature alignment
-    if X.shape[1] > expected_features:
-        X = X[:, :expected_features]
-    elif X.shape[1] < expected_features:
-        pad = expected_features - X.shape[1]
+    if X.shape[1] > expected:
+        X = X[:, :expected]
+    elif X.shape[1] < expected:
+        pad = expected - X.shape[1]
         X = np.hstack([X, np.zeros((X.shape[0], pad))])
 
     X_scaled = scaler.transform(X)
 
-    # -----------------------------------
-    # Load selected model
-    # -----------------------------------
-    model = joblib.load(MODELS[model_choice])
+    metrics = []
 
-    # -----------------------------
-    # Predictions + Probabilities
-    # -----------------------------
-    preds = model.predict(X_scaled)
+    st.subheader("Model Evaluation Metrics")
 
-    if hasattr(model, "predict_proba"):
-       probs = model.predict_proba(X_scaled)[:, 1]
-    else:
-       probs = None
+    for name, path in MODELS.items():
 
-    result_df = df.copy()
-    result_df["Prediction"] = preds
+        model = joblib.load(path)
+        preds = model.predict(X_scaled)
 
-    if probs is not None:
-       result_df["Probability"] = probs.round(3)
+        if hasattr(model, "predict_proba"):
+            probs = model.predict_proba(X_scaled)[:, 1]
+            auc = roc_auc_score(y, probs)
+        else:
+            auc = "NA"
 
-    st.subheader("Prediction Results")
-    st.dataframe(result_df.head(50))
+        metrics.append({
+            "Model": name,
+            "Accuracy": round(accuracy_score(y, preds), 4),
+            "AUC": round(auc, 4) if auc != "NA" else "NA",
+            "Precision": round(precision_score(y, preds), 4),
+            "Recall": round(recall_score(y, preds), 4),
+            "F1 Score": round(f1_score(y, preds), 4),
+            "MCC": round(matthews_corrcoef(y, preds), 4)
+        })
 
-    # Download button
-    csv = result_df.to_csv(index=False).encode("utf-8")
+    metrics_df = pd.DataFrame(metrics)
+
+    st.dataframe(metrics_df)
 
     st.download_button(
-        "Download Predictions CSV",
-        csv,
-        "predictions.csv",
+        "Download Metrics CSV",
+        metrics_df.to_csv(index=False).encode("utf-8"),
+        "metrics.csv",
         "text/csv"
     )
 
-    # Summary counts
-    st.subheader("Prediction Summary")
-    st.write(result_df["Prediction"].value_counts())
-
-    # -----------------------------------
-    # Metrics (if target exists)
-    # -----------------------------------
-    if y is not None:
-        st.subheader("Classification Report")
-        st.text(classification_report(y, preds))
-
-        st.subheader("Confusion Matrix")
-        st.write(confusion_matrix(y, preds))
+    st.success("All 6 models evaluated on same dataset successfully.")
