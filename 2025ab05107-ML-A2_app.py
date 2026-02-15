@@ -78,10 +78,38 @@ if uploaded:
     # -----------------------------------
     model = joblib.load(MODELS[model_choice])
 
+    # -----------------------------
+    # Predictions + Probabilities
+    # -----------------------------
     preds = model.predict(X_scaled)
 
-    st.subheader("Predictions")
-    st.dataframe(pd.DataFrame({"Prediction": preds}))
+    if hasattr(model, "predict_proba"):
+       probs = model.predict_proba(X_scaled)[:, 1]
+    else:
+       probs = None
+
+    result_df = df.copy()
+    result_df["Prediction"] = preds
+
+    if probs is not None:
+       result_df["Probability"] = probs.round(3)
+
+    st.subheader("Prediction Results")
+    st.dataframe(result_df.head(50))
+
+    # Download button
+    csv = result_df.to_csv(index=False).encode("utf-8")
+
+    st.download_button(
+        "Download Predictions CSV",
+        csv,
+        "predictions.csv",
+        "text/csv"
+    )
+
+    # Summary counts
+    st.subheader("Prediction Summary")
+    st.write(result_df["Prediction"].value_counts())
 
     # -----------------------------------
     # Metrics (if target exists)
