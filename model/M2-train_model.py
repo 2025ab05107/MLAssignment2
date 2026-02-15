@@ -19,7 +19,10 @@ df = pd.read_csv("../data/UCI_Credit_Card.csv")
 df.replace("?", np.nan, inplace=True)
 
 # Convert target to binary
-df["num"] = (df["num"] > 0).astype(int)
+
+target = "default.payment.next.month"
+
+df[target] = df[target].astype(int)
 
 # Encode categorical columns
 for col in df.columns:
@@ -30,8 +33,9 @@ for col in df.columns:
 # Fill missing values with column median
 df = df.fillna(df.median(numeric_only=True))
 
-X = df.drop("num", axis=1)
-y = df["num"]
+X = df.drop([target, "ID"], axis=1)
+y = df[target]
+
 
 X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.2, random_state=42
