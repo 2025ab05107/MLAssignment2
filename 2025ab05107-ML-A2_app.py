@@ -2,27 +2,34 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import joblib
+from pathlib import Path
 from sklearn.metrics import classification_report, confusion_matrix
 
 st.set_page_config(page_title="ML Assignment 2", layout="wide")
-
 st.title("ML Assignment 2 – Credit Card Default Prediction")
+
+# -----------------------------------
+# Absolute project paths (CRITICAL)
+# -----------------------------------
+BASE_DIR = Path(__file__).resolve().parent
+MODEL_DIR = BASE_DIR / "model"
 
 TARGET = "default.payment.next.month"
 
-model_names = [
-    "Logistic Regression",
-    "Decision Tree",
-    "KNN",
-    "Naive Bayes",
-    "Random Forest",
-    "XGBoost"
-]
+MODELS = {
+    "Logistic Regression": MODEL_DIR / "Logistic Regression.pkl",
+    "Decision Tree": MODEL_DIR / "Decision Tree.pkl",
+    "KNN": MODEL_DIR / "KNN.pkl",
+    "Naive Bayes": MODEL_DIR / "Naive Bayes.pkl",
+    "XGBoost": MODEL_DIR / "XGBoost.pkl"
+}
 
-model_choice = st.selectbox("Select Model", model_names)
+SCALER_PATH = MODEL_DIR / "scaler.pkl"
 
+# -----------------------------------
+model_choice = st.selectbox("Select Model", MODELS.keys())
 
-uploaded = st.file_uploader("Upload CSV file for prediction", type="csv")
+uploaded = st.file_uploader("Upload CSV file", type="csv")
 
 if uploaded:
 
@@ -31,15 +38,15 @@ if uploaded:
     st.subheader("Uploaded Data")
     st.dataframe(df.head())
 
-    # Check target column
+    # Target detection
     if TARGET in df.columns:
         y = df[TARGET]
         X = df.drop(columns=[TARGET])
-        st.success("Target column detected. Evaluation enabled.")
+        st.success("Target column detected – evaluation enabled.")
     else:
         y = None
         X = df
-        st.info("Target column not found. Prediction mode.")
+        st.info("Prediction mode (no target column).")
 
     # Cleaning
     X = X.replace("?", np.nan)
@@ -49,8 +56,10 @@ if uploaded:
 
     X = X.fillna(0)
 
-    # Load scaler
-    scaler = joblib.load("model/scaler.pkl")
+    # -----------------------------------
+    # Load scaler safely
+    # -----------------------------------
+    scaler = joblib.load(SCALER_PATH)
     expected_features = scaler.n_features_in_
 
     X = X.to_numpy()
@@ -59,19 +68,24 @@ if uploaded:
     if X.shape[1] > expected_features:
         X = X[:, :expected_features]
     elif X.shape[1] < expected_features:
-        diff = expected_features - X.shape[1]
-        X = np.hstack([X, np.zeros((X.shape[0], diff))])
+        pad = expected_features - X.shape[1]
+        X = np.hstack([X, np.zeros((X.shape[0], pad))])
 
     X_scaled = scaler.transform(X)
 
-    # Load model
-    
-    model = joblib.load(f"model/{model_choice}.pkl")
+    # -----------------------------------
+    # Load selected model
+    # -----------------------------------
+    model = joblib.load(MODELS[model_choice])
+
     preds = model.predict(X_scaled)
 
     st.subheader("Predictions")
     st.dataframe(pd.DataFrame({"Prediction": preds}))
 
+    # -----------------------------------
+    # Metrics (if target exists)
+    # -----------------------------------
     if y is not None:
         st.subheader("Classification Report")
         st.text(classification_report(y, preds))
