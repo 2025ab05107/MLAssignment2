@@ -19,10 +19,11 @@ MODEL_DIR = BASE / "model"
 TARGET = "default.payment.next.month"
 
 MODELS = {
-    "Logistic Regression": MODEL_DIR / "Logistic_Regression.pkl",
-    "Decision Tree": MODEL_DIR / "Decision_Tree.pkl",
+    "Logistic Regression": MODEL_DIR / "Logistic Regression.pkl",
+    "Decision Tree": MODEL_DIR / "Decision Tree.pkl",
     "KNN": MODEL_DIR / "KNN.pkl",
-    "Naive Bayes": MODEL_DIR / "Naive_Bayes.pkl",
+    "Naive Bayes": MODEL_DIR / "Naive Bayes.pkl",
+    "Random Forest": MODEL_DIR / "Random Forest.pkl",
     "XGBoost": MODEL_DIR / "XGBoost.pkl"
 }
 
