@@ -15,11 +15,11 @@ Target: default.payment.next.month
 | Model | Accuracy | AUC | Precision | Recall | F1 | MCC |
 |------|----------|-----|-----------|--------|----|-----|
 | Logistic Regression | 0.7854 | 0.5 | 0.0 | 0.0 | 0.0 | 0.0 |
-| Decision Tree | | | | | | |
-| KNN | | | | | | |
-| Naive Bayes | | | | | | |
-| Random Forest | | | | | | |
-| XGBoost | | | | | | |
+| Decision Tree | 0.2146 | 0.5 | 0.2146 | 1.0 | 0.3533 | 0.0 |
+| KNN | 0.2239 | 0.4987 | 0.2153 | 0.9899 | 0.3537 | 0.0161 |
+| Naive Bayes | 0.2146 | 0.5 | 0.2146 | 1.0| 0.3533 | 0.0 |
+| Random Forest | 0.7434 | 0.6583 | 0.4104 | 0.4486 | 0.4286 | 0.264 |
+| XGBoost | 0.6795 | 0.6635 | 0.3466 | 0.5577 | 0.4275 | 0.2335 |
 
 ## Observations
 
