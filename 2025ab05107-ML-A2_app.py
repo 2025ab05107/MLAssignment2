@@ -32,8 +32,11 @@ if uploaded:
     # Fill NaN with 0
     data = data.fillna(0)
 
-    y = data["num"]
-    X = data.drop("num", axis=1)
+    target = "default.payment.next.month"
+    X = data.drop([target, "ID"], axis=1)
+    y = data[target]
+
+    st.write(data.columns)
 
     scaler = joblib.load("model/scaler.pkl")
 
