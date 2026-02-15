@@ -1,10 +1,5 @@
 # MLAssignment2
 
-# Dataset Description
-# Comparison Table
-# Model Observations
-# ML Assignment 2
-
 ## Problem Statement
 Build multiple ML classifiers and deploy using Streamlit.
 
