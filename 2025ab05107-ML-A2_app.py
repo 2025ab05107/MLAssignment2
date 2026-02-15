@@ -25,21 +25,26 @@ if uploaded:
     # Replace ?
     data.replace("?", np.nan, inplace=True)
 
-    # Convert everything to numeric
+    # Convert all columns to numeric
     for col in data.columns:
         data[col] = pd.to_numeric(data[col], errors="coerce")
 
-    # Fill NaN
-    data = data.fillna(data.median())
+    # Drop columns fully NaN
+    data = data.dropna(axis=1, how="all")
 
-    # Separate target
+    # Replace remaining NaN with 0
+    data = data.fillna(0)
+
     y = data["num"]
     X = data.drop("num", axis=1)
 
     scaler = joblib.load("model/scaler.pkl")
 
-    # Ensure same feature count
+    # Match feature size
     X = X.iloc[:, :scaler.n_features_in_]
+
+    # Convert to numpy float
+    X = X.astype(float)
 
     X = scaler.transform(X)
 
