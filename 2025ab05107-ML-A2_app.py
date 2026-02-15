@@ -4,16 +4,13 @@ import numpy as np
 import joblib
 from pathlib import Path
 from sklearn.metrics import (
-    accuracy_score,
-    roc_auc_score,
-    precision_score,
-    recall_score,
-    f1_score,
-    matthews_corrcoef
+    accuracy_score, roc_auc_score, precision_score,
+    recall_score, f1_score, matthews_corrcoef,
+    confusion_matrix
 )
+import matplotlib.pyplot as plt
 
-st.set_page_config(page_title="ML Assignment 2", layout="wide")
-
+st.set_page_config(layout="wide")
 st.title("ML Assignment 2 – Classification Models & Evaluation")
 
 BASE = Path(__file__).resolve().parent
@@ -22,33 +19,34 @@ MODEL_DIR = BASE / "model"
 TARGET = "default.payment.next.month"
 
 MODELS = {
-    "Logistic Regression": MODEL_DIR / "Logistic Regression.pkl",
-    "Decision Tree": MODEL_DIR / "Decision Tree.pkl",
+    "Logistic Regression": MODEL_DIR / "Logistic_Regression.pkl",
+    "Decision Tree": MODEL_DIR / "Decision_Tree.pkl",
     "KNN": MODEL_DIR / "KNN.pkl",
-    "Naive Bayes": MODEL_DIR / "Naive Bayes.pkl",
-    "Random Forest": MODEL_DIR / "Random Forest.pkl",
+    "Naive Bayes": MODEL_DIR / "Naive_Bayes.pkl",
     "XGBoost": MODEL_DIR / "XGBoost.pkl"
 }
 
 SCALER = MODEL_DIR / "scaler.pkl"
 
-uploaded = st.file_uploader("Upload CSV Dataset (must contain target column)", type="csv")
+uploaded = st.file_uploader("Upload CSV Dataset", type="csv")
 
 if uploaded:
 
     df = pd.read_csv(uploaded)
-
     st.subheader("Dataset Preview")
     st.dataframe(df.head())
 
-    if TARGET not in df.columns:
-        st.error("Dataset must contain target column: default.payment.next.month")
-        st.stop()
+    has_target = TARGET in df.columns
 
-    y = df[TARGET]
-    X = df.drop(columns=[TARGET])
+    if has_target:
+        y = df[TARGET]
+        X = df.drop(columns=[TARGET])
+        st.success("Evaluation Mode Enabled")
+    else:
+        X = df
+        y = None
+        st.info("Prediction Mode Enabled")
 
-    # Cleaning
     X = X.replace("?", np.nan)
     X = X.apply(pd.to_numeric, errors="coerce")
     X = X.fillna(0)
@@ -61,45 +59,91 @@ if uploaded:
     if X.shape[1] > expected:
         X = X[:, :expected]
     elif X.shape[1] < expected:
-        pad = expected - X.shape[1]
-        X = np.hstack([X, np.zeros((X.shape[0], pad))])
+        X = np.hstack([X, np.zeros((X.shape[0], expected - X.shape[1]))])
 
     X_scaled = scaler.transform(X)
 
-    metrics = []
+    # ---------------- Prediction Mode ----------------
+    if not has_target:
 
-    st.subheader("Model Evaluation Metrics")
+        model_name = st.selectbox("Select Model for Prediction", MODELS.keys())
+        model = joblib.load(MODELS[model_name])
 
-    for name, path in MODELS.items():
-
-        model = joblib.load(path)
         preds = model.predict(X_scaled)
 
-        if hasattr(model, "predict_proba"):
-            probs = model.predict_proba(X_scaled)[:, 1]
-            auc = roc_auc_score(y, probs)
-        else:
-            auc = "NA"
+        probs = model.predict_proba(X_scaled)[:, 1] if hasattr(model, "predict_proba") else None
 
-        metrics.append({
-            "Model": name,
-            "Accuracy": round(accuracy_score(y, preds), 4),
-            "AUC": round(auc, 4) if auc != "NA" else "NA",
-            "Precision": round(precision_score(y, preds), 4),
-            "Recall": round(recall_score(y, preds), 4),
-            "F1 Score": round(f1_score(y, preds), 4),
-            "MCC": round(matthews_corrcoef(y, preds), 4)
-        })
+        result = df.copy()
+        result["Prediction"] = preds
 
-    metrics_df = pd.DataFrame(metrics)
+        if probs is not None:
+            result["Probability"] = probs.round(3)
 
-    st.dataframe(metrics_df)
+        st.subheader("Prediction Results")
+        st.dataframe(result.head(50))
 
-    st.download_button(
-        "Download Metrics CSV",
-        metrics_df.to_csv(index=False).encode("utf-8"),
-        "metrics.csv",
-        "text/csv"
-    )
+        st.download_button(
+            "Download Predictions",
+            result.to_csv(index=False).encode(),
+            "predictions.csv"
+        )
 
-    st.success("All 6 models evaluated on same dataset successfully.")
+        st.write("Prediction Summary")
+        st.write(result["Prediction"].value_counts())
+
+    # ---------------- Evaluation Mode ----------------
+    else:
+
+        metrics = {}
+        conf_mats = {}
+
+        for name, path in MODELS.items():
+
+            model = joblib.load(path)
+            preds = model.predict(X_scaled)
+
+            probs = model.predict_proba(X_scaled)[:, 1] if hasattr(model, "predict_proba") else None
+
+            metrics[name] = {
+                "Accuracy": accuracy_score(y, preds),
+                "AUC": roc_auc_score(y, probs) if probs is not None else 0,
+                "Precision": precision_score(y, preds),
+                "Recall": recall_score(y, preds),
+                "F1": f1_score(y, preds),
+                "MCC": matthews_corrcoef(y, preds)
+            }
+
+            conf_mats[name] = confusion_matrix(y, preds)
+
+        metrics_df = pd.DataFrame(metrics).T.round(4)
+
+        st.subheader("Model Evaluation Metrics")
+        st.dataframe(metrics_df)
+
+        # Best Model (by F1)
+        best_model = metrics_df["F1"].idxmax()
+
+        st.success(f"🏆 Best Performing Model (by F1 Score): {best_model}")
+
+        # ---------------- Confusion Matrices ----------------
+        st.subheader("Confusion Matrices")
+
+        for name, cm in conf_mats.items():
+            st.write(f"### {name}")
+            fig, ax = plt.subplots()
+            ax.imshow(cm)
+            ax.set_xlabel("Predicted")
+            ax.set_ylabel("Actual")
+            ax.set_title(name)
+            for i in range(2):
+                for j in range(2):
+                    ax.text(j, i, cm[i, j], ha="center", va="center")
+            st.pyplot(fig)
+
+        st.download_button(
+            "Download Metrics CSV",
+            metrics_df.to_csv().encode(),
+            "metrics.csv"
+        )
+
+        st.success("Evaluation completed for all models.")
