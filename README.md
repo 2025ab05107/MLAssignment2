@@ -24,10 +24,10 @@ Target: default.payment.next.month
 ## Observations
 
 | Model | Observation | Remark |
-|------|-------------|
-| Logistic Regression | Logistic Regression failed to detect default cases and is unsuitable despite high accuracy due to severe class imbalance. | Achieved the highest accuracy (78.54%), but produced zero precision, recall, F1, and MCC, indicating it predicted only the majority class. AUC of 0.5 confirms no discriminative power. |
-| Decision Tree | |
-| KNN | |
-| Naive Bayes | |
-| Random Forest | |
-| XGBoost | |
+|------|-------------|---------|
+| Logistic Regression | Logistic Regression failed to detect default cases and is unsuitable despite high accuracy due to severe class imbalance. | * Achieved the highest accuracy (78.54%), but produced zero precision, recall, F1, and MCC, indicating it predicted only the majority class. * AUC of 0.5 confirms no discriminative power. |
+| Decision Tree | Decision Tree overfits and classifies most samples as defaulters, leading to poor generalization. | *Low accuracy (21.46%) but recall of 1.0, meaning it detected all defaulters. * Very low precision and MCC indicate large number of false positives. * AUC of 0.5 suggests random-like performance. |
+| KNN | KNN captures minority class but lacks stability and overall predictive strength. | * Similar behavior to Decision Tree with very high recall (0.9899) but poor accuracy. * Slight improvement in MCC (0.0161), still very weak. |
+| Naive Bayes | Naive Bayes detects defaults but produces excessive false alarms. | * Same pattern as Decision Tree: perfect recall but low accuracy and zero MCC. * Strong assumption of feature independence limits its performance. |
+| Random Forest | Random Forest provides the best trade-off between precision and recall and is the most reliable model in this study. | * Strong balanced performance with Accuracy 74.34%, F1 0.4286, MCC 0.264 (highest). * AUC of 0.6583 shows good class separation. |
+| XGBoost | XGBoost shows strong learning capability but underperforms Random Forest in overall balance. | Good recall (0.5577) and AUC (0.6635 – highest), but slightly lower F1 and MCC than Random Forest. |
