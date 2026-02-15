@@ -13,7 +13,7 @@ from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.metrics import accuracy_score, roc_auc_score, precision_score, recall_score, f1_score, matthews_corrcoef
 
 # Load dataset
-df = pd.read_csv("../data/heart_disease_uci.csv")
+df = pd.read_csv("../data/UCI_Credit_Card.csv")
 
 # Replace ? with NaN
 df.replace("?", np.nan, inplace=True)
