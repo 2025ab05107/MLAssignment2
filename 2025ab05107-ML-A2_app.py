@@ -25,14 +25,11 @@ if uploaded:
     # Replace ?
     data.replace("?", np.nan, inplace=True)
 
-    # Convert all columns to numeric
+    # Convert all to numeric
     for col in data.columns:
         data[col] = pd.to_numeric(data[col], errors="coerce")
 
-    # Drop columns fully NaN
-    data = data.dropna(axis=1, how="all")
-
-    # Replace remaining NaN with 0
+    # Fill NaN with 0
     data = data.fillna(0)
 
     y = data["num"]
@@ -40,12 +37,18 @@ if uploaded:
 
     scaler = joblib.load("model/scaler.pkl")
 
-    # Match feature size and
-    # Convert to numpy float
+    required_features = scaler.n_features_in_
 
-    X = X.iloc[:, :scaler.n_features_in_].to_numpy(dtype=float)
+    X = X.to_numpy(dtype=float)
+
+    # Fix feature size exactly
+    if X.shape[1] > required_features:
+        X = X[:, :required_features]
+    elif X.shape[1] < required_features:
+        pad = required_features - X.shape[1]
+        X = np.hstack([X, np.zeros((X.shape[0], pad))])
+
     X = scaler.transform(X)
-
 
     model = joblib.load(f"model/{model_choice}.pkl")
 
