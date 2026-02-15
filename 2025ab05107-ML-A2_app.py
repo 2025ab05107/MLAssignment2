@@ -13,17 +13,17 @@ import matplotlib.pyplot as plt
 st.set_page_config(layout="wide")
 st.title("ML Assignment 2 – Classification Models & Evaluation")
 
+# ---------------- Paths ----------------
 BASE = Path(__file__).resolve().parent
 MODEL_DIR = BASE / "model"
 
 TARGET = "default.payment.next.month"
 
 MODELS = {
-    "Logistic Regression": MODEL_DIR / "Logistic Regression.pkl",
-    "Decision Tree": MODEL_DIR / "Decision Tree.pkl",
+    "Logistic Regression": MODEL_DIR / "Logistic_Regression.pkl",
+    "Decision Tree": MODEL_DIR / "Decision_Tree.pkl",
     "KNN": MODEL_DIR / "KNN.pkl",
-    "Naive Bayes": MODEL_DIR / "Naive Bayes.pkl",
-    "Random Forest": MODEL_DIR / "Random Forest.pkl",
+    "Naive Bayes": MODEL_DIR / "Naive_Bayes.pkl",
     "XGBoost": MODEL_DIR / "XGBoost.pkl"
 }
 
@@ -34,6 +34,7 @@ uploaded = st.file_uploader("Upload CSV Dataset", type="csv")
 if uploaded:
 
     df = pd.read_csv(uploaded)
+
     st.subheader("Dataset Preview")
     st.dataframe(df.head())
 
@@ -48,6 +49,7 @@ if uploaded:
         y = None
         st.info("Prediction Mode Enabled")
 
+    # Cleaning
     X = X.replace("?", np.nan)
     X = X.apply(pd.to_numeric, errors="coerce")
     X = X.fillna(0)
@@ -71,7 +73,6 @@ if uploaded:
         model = joblib.load(MODELS[model_name])
 
         preds = model.predict(X_scaled)
-
         probs = model.predict_proba(X_scaled)[:, 1] if hasattr(model, "predict_proba") else None
 
         result = df.copy()
@@ -102,7 +103,6 @@ if uploaded:
 
             model = joblib.load(path)
             preds = model.predict(X_scaled)
-
             probs = model.predict_proba(X_scaled)[:, 1] if hasattr(model, "predict_proba") else None
 
             metrics[name] = {
@@ -118,16 +118,30 @@ if uploaded:
 
         metrics_df = pd.DataFrame(metrics).T.round(4)
 
-        st.subheader("Model Evaluation Metrics")
+        # -------- Metrics Table --------
+        st.subheader("📊 Model Evaluation Metrics")
         st.dataframe(metrics_df)
 
-        # Best Model (by F1)
+        # -------- Best Model --------
         best_model = metrics_df["F1"].idxmax()
-
         st.success(f"🏆 Best Performing Model (by F1 Score): {best_model}")
 
-        # ---------------- Confusion Matrices ----------------
-        st.subheader("Confusion Matrices")
+        # -------- Detailed Metrics --------
+        st.subheader("📌 Detailed Metrics Per Model")
+
+        for model_name, row in metrics_df.iterrows():
+            st.markdown(f"### 🔹 {model_name}")
+
+            c1, c2, c3 = st.columns(3)
+            c1.metric("Accuracy", row["Accuracy"])
+            c1.metric("AUC", row["AUC"])
+            c2.metric("Precision", row["Precision"])
+            c2.metric("Recall", row["Recall"])
+            c3.metric("F1 Score", row["F1"])
+            c3.metric("MCC", row["MCC"])
+
+        # -------- Confusion Matrices --------
+        st.subheader("🧩 Confusion Matrices")
 
         for name, cm in conf_mats.items():
             st.write(f"### {name}")
@@ -135,7 +149,6 @@ if uploaded:
             ax.imshow(cm)
             ax.set_xlabel("Predicted")
             ax.set_ylabel("Actual")
-            ax.set_title(name)
             for i in range(2):
                 for j in range(2):
                     ax.text(j, i, cm[i, j], ha="center", va="center")
@@ -147,4 +160,4 @@ if uploaded:
             "metrics.csv"
         )
 
-        st.success("Evaluation completed for all models.")
+        st.success("Evaluation completed successfully for all models.")
