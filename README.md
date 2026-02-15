@@ -23,9 +23,9 @@ Target: default.payment.next.month
 
 ## Observations
 
-| Model | Observation |
+| Model | Observation | Remark |
 |------|-------------|
-| Logistic Regression | |
+| Logistic Regression | Logistic Regression failed to detect default cases and is unsuitable despite high accuracy due to severe class imbalance. | Achieved the highest accuracy (78.54%), but produced zero precision, recall, F1, and MCC, indicating it predicted only the majority class. AUC of 0.5 confirms no discriminative power. |
 | Decision Tree | |
 | KNN | |
 | Naive Bayes | |
