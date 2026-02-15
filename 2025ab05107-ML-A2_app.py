@@ -21,8 +21,8 @@ uploaded = st.file_uploader("Upload Test CSV", type="csv")
 if uploaded:
     data = pd.read_csv(uploaded)
 
-    X = data.drop("target", axis=1)
-    y = data["target"]
+    X = data.drop("num", axis=1)
+    y = data["num"]
 
     scaler = joblib.load("model/scaler.pkl")
     X = scaler.transform(X)
