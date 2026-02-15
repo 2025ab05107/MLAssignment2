@@ -14,7 +14,7 @@ Target: default.payment.next.month
 
 | Model | Accuracy | AUC | Precision | Recall | F1 | MCC |
 |------|----------|-----|-----------|--------|----|-----|
-| Logistic Regression |0.7854|0.5|0.0|0.0|0.0|0.0|
+| Logistic Regression | 0.7854 | 0.5 | 0.0 | 0.0 | 0.0 | 0.0 |
 | Decision Tree | | | | | | |
 | KNN | | | | | | |
 | Naive Bayes | | | | | | |
