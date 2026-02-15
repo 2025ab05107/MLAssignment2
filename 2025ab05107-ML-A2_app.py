@@ -40,13 +40,12 @@ if uploaded:
 
     scaler = joblib.load("model/scaler.pkl")
 
-    # Match feature size
-    X = X.iloc[:, :scaler.n_features_in_]
-
+    # Match feature size and
     # Convert to numpy float
-    X = X.astype(float)
 
+    X = X.iloc[:, :scaler.n_features_in_].to_numpy(dtype=float)
     X = scaler.transform(X)
+
 
     model = joblib.load(f"model/{model_choice}.pkl")
 
