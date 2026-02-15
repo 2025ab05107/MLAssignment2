@@ -1,98 +1,82 @@
 import streamlit as st
 import pandas as pd
-import numpy as np
 import joblib
-from sklearn.metrics import classification_report, confusion_matrix
 
 st.set_page_config(page_title="ML Assignment 2", layout="wide")
-st.title("Credit Card Default Prediction – ML Assignment 2")
+
+st.title("Credit Card Default Prediction")
 
 # -----------------------------
-# Configuration
+# Load Dataset
 # -----------------------------
-TARGET_COL = "default.payment.next.month"
+@st.cache_data
+def load_data():
+    return pd.read_csv("data/UCI_Credit_Card.csv")
 
-MODEL_MAP = {
-    "Logistic Regression": "Logistic Regression.pkl",
-    "Decision Tree": "Decision Tree.pkl",
-    "KNN": "KNN.pkl",
-    "Naive Bayes": "Naive Bayes.pkl",
-    "Random Forest": "Random Forest.pkl",
-    "XGBoost": "XGBoost.pkl"
-}
+df = load_data()
+
+st.subheader("Dataset Preview")
+st.dataframe(df.head())
+
+# Show columns (VERY IMPORTANT for debugging)
+st.subheader("Available Columns")
+st.write(list(df.columns))
 
 # -----------------------------
-# Model selection
+# Detect Target Column Safely
 # -----------------------------
-model_name = st.selectbox("Select Model", list(MODEL_MAP.keys()))
+possible_targets = [
+    "default.payment.next.month",
+    "default payment next month",
+    "DEFAULT_PAYMENT_NEXT_MONTH"
+]
 
-uploaded_file = st.file_uploader("Upload Test CSV File", type="csv")
+target = None
+for col in df.columns:
+    if "default" in col.lower():
+        target = col
+        break
 
-if uploaded_file:
-    data = pd.read_csv(uploaded_file)
+if target is None:
+    st.error("Target column not found!")
+    st.stop()
 
-    st.subheader("Uploaded Data Preview")
-    st.dataframe(data.head())
+st.success(f"Target column detected: {target}")
 
-    # -----------------------------
-    # Separate target if present
-    # -----------------------------
-    if TARGET_COL in data.columns:
-        y_true = data[TARGET_COL]
-        X = data.drop(columns=[TARGET_COL])
-        st.success("Target column found. Evaluation mode enabled.")
+X = df.drop(columns=[target])
+y = df[target]
+
+# -----------------------------
+# Load Trained Model
+# -----------------------------
+@st.cache_resource
+def load_model():
+    return joblib.load("model.pkl")
+
+model = load_model()
+
+# -----------------------------
+# User Input
+# -----------------------------
+st.subheader("Enter Feature Values")
+
+input_data = {}
+
+for col in X.columns:
+    input_data[col] = st.number_input(col, float(X[col].mean()))
+
+input_df = pd.DataFrame([input_data])
+
+# -----------------------------
+# Prediction
+# -----------------------------
+if st.button("Predict"):
+    prediction = model.predict(input_df)[0]
+    prob = model.predict_proba(input_df)[0][1]
+
+    if prediction == 1:
+        st.error("Customer WILL default next month")
     else:
-        y_true = None
-        X = data
-        st.info("Target column not found. Prediction-only mode enabled.")
+        st.success("Customer will NOT default")
 
-    # -----------------------------
-    # Data cleaning
-    # -----------------------------
-    X = X.replace("?", np.nan)
-
-    for col in X.columns:
-        X[col] = pd.to_numeric(X[col], errors="coerce")
-
-    X = X.fillna(0)
-
-    # -----------------------------
-    # Load scaler
-    # -----------------------------
-    scaler = joblib.load("model/scaler.pkl")
-    required_features = scaler.n_features_in_
-
-    X = X.to_numpy(dtype=float)
-
-    # Fix feature mismatch safely
-    if X.shape[1] > required_features:
-        X = X[:, :required_features]
-    elif X.shape[1] < required_features:
-        pad = required_features - X.shape[1]
-        X = np.hstack([X, np.zeros((X.shape[0], pad))])
-
-    X_scaled = scaler.transform(X)
-
-    # -----------------------------
-    # Load model
-    # -----------------------------
-    model = joblib.load(f"model/{MODEL_MAP[model_name]}")
-
-    preds = model.predict(X_scaled)
-
-    # -----------------------------
-    # Output
-    # -----------------------------
-    st.subheader("Predictions")
-    output_df = pd.DataFrame({"Prediction": preds})
-    st.dataframe(output_df)
-
-    # -----------------------------
-    # Evaluation (only if target exists)
-    # -----------------------------
-    if y_true is not None:
-        st.subheader("Classification Report")
-        st.text(classification_report(y_true, preds))
-
-        st.subheader("Confusion Matrix")
-        st.write(confusion_matrix(y_true, preds))
+    st.write(f"Default Probability: {prob:.2f}")
